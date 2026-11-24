@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Games — Google Play Collection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .animate-card {
+      animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .animate-modal {
+      animation: modalIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .card-hover {
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.25s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white min-h-screen flex flex-col">
+
+  <!-- Minimal Header -->
+  <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+          <i data-lucide="gamepad-2" class="w-5 h-5"></i>
+        </div>
+        <span class="font-bold text-base sm:text-lg tracking-tight">My Games</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-14">
+
+    <!-- Clean Intro -->
+    <div class="text-center max-w-xl mx-auto mb-10 sm:mb-12 animate-card">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-xs font-semibold text-emerald-700 mb-4">
+        <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+        <span>Google Play Collection</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+        Select a Game to Play
+      </h1>
+      <p class="mt-3 text-sm sm:text-base text-slate-600">
+        Tap any game below to view screenshots, read details, and download on Google Play.
+      </p>
+    </div>
+
+    <!-- Games Grid -->
+    <section id="gamesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Rendered by JS -->
+    </section>
+
+  </main>
+
+  <!-- Minimal Footer -->
+  <footer class="border-t border-slate-200/80 py-6 text-center text-xs text-slate-500 bg-white">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      Compatible with Android Phones, Tablets &amp; Desktop Browsers
+    </div>
+  </footer>
+
+  <!-- Game Detail Modal -->
+  <div
+    id="gameModal"
+    class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/45 backdrop-blur-sm transition-opacity duration-200"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+  >
+    <div id="modalBackdrop" class="absolute inset-0"></div>
+    <div class="relative z-10 w-full sm:max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-modal max-h-[90vh] flex flex-col">
+
+      <!-- Modal Header -->
+      <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between gap-4 shrink-0 bg-white">
+        <div class="flex items-center gap-4 min-w-0">
+          <div id="modalIconWrap" class="w-16 h-16 rounded-2xl border border-slate-200 bg-white overflow-hidden flex items-center justify-center shadow-sm shrink-0">
+            <!-- Icon -->
+          </div>
+          <div class="min-w-0">
+            <span id="modalStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold mb-1">
+              Status
+            </span>
+            <h2 id="modalTitle" class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Game Title</h2>
+          </div>
+        </div>
+
+        <button
+          id="closeModalBtn"
+          type="button"
+          aria-label="Close modal"
+          class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors shrink-0"
+        >
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Scrollable Body -->
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-6 bg-white">
+        <!-- Screenshots Gallery -->
+        <div id="modalGallerySection" class="hidden">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+            Gameplay Preview
+          </h3>
+          <div id="modalGallery" class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+            <!-- Screenshots -->
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div id="modalDescWrap" class="space-y-3 text-sm sm:text-[15px] text-slate-600 leading-relaxed">
+          <!-- Paragraphs / Sections -->
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/80 shrink-0">
+        <div id="modalActionWrap">
+          <!-- Download button or Coming Soon -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GAMES = [
+      {
+        id: 'amazing-circle',
+        title: 'Amazing Circle',
+        icon: '1st game.jpeg',
+        fallbackSvg: `
+          <svg viewBox="0 0 100 100" class="w-11 h-11" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 14C70 13 86 29 85 50C86 71 70 86 49 85C28 86 14 70 15 49C14 28 29 14 50 14Z" stroke="#0f172a" stroke-width="6.5" stroke-linecap="round"/>
+          </svg>
+        `,
+        shortDesc: 'Test your timing, reflexes, and precision in this fast-paced 2D arcade challenge!',
+        sections: [
+          {
+            type: 'p',
+            text: 'Test your timing, reflexes, and precision in this fast-paced 2D arcade challenge!'
+          },
+          {
+            type: 'p',
+            text: 'Welcome to an addictive, tap-to-jump arcade experience where every second counts. Master dynamic parabolic jump mechanics as you navigate tight spaces, avoid treacherous walls, and attempt to survive as long as possible to set unbeatable high scores.'
+          },
+          {
+            type: 'p',
+            text: 'Whether you have two minutes to spare or want to settle in for an intense session chasing a new personal record, this game delivers instant, seamless gameplay action straight to your fingertips.'
+          }
+        ],
+        screenshots: ['1st1.webp', '1st2.webp', '1st3.webp', '1st4.webp'],
+        playStoreUrl: 'https://play.google.com/store/apps/details?id=com.libe.amazingcircle',
+        status: 'Available on Play Store'
+      },
+      {
+        id: 'puzzle-suite',
+        title: 'Puzzle Suite',
+        icon: '2nd game.webp',
+        fallbackSvg: `
+          <svg viewBox="0 0 100 100" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="50" height="50" fill="#f8fafc"/>
+            <rect x="50" y="0" width="50" height="50" fill="#1d4ed8"/>
+            <rect x="0" y="50" width="50" height="50" fill="#60a5fa"/>
+            <rect x="50" y="50" width="50" height="50" fill="#f8fafc"/>
+          </svg>
+        `,
+        shortDesc: 'Sharpen your mind with four classic and modern brain teasers in one lightweight, distraction-free app.',
+        sections: [
+          {
+            type: 'p',
+            text: 'Sharpen your mind with four classic and modern brain teasers in one lightweight, distraction-free app. Designed with clean geometry, responsive animations, and zero clutter, Puzzle Suite lets you focus purely on deduction.'
+          },
+          {
+            type: 'heading',
+            text: 'Four Distinct Logic Games'
+          },
+          {
+            type: 'list',
+            items: [
+              'Sudoku: Classic 9x9 number placement with pencil notes, remaining digit counters, and matching number highlights.',
+              'Minesweeper: Clean, grid-free tile clearing with smooth radial wave reveals and quick tap-or-long-press flagging.',
+              'Tango: Binary Sun and Moon deduction across balanced grids using equality (=) and opposite (×) border clues.',
+              'Queens: Place one crown per row, column, and color region without letting any two crowns touch.'
+            ]
+          },
+          {
+            type: 'heading',
+            text: 'Three Calibrated Difficulty Levels'
+          },
+          {
+            type: 'p',
+            text: 'Every game offers Easy, Medium, and Hard modes. Easy provides a smooth warm-up, Medium tests pattern recognition, and Hard delivers demanding boards built for experienced puzzle solvers.'
+          },
+          {
+            type: 'heading',
+            text: 'Built for Daily Focus'
+          },
+          {
+            type: 'list',
+            items: [
+              'Pure White & Dark Themes: Switch instantly between crisp daylight white and easy-on-the-eyes dark mode.',
+              'Auto-Save & Resume: Leave any puzzle mid-game and pick up right where you left off with your exact board and timer preserved.',
+              'Logic-Based Hints: Stuck on a tough board? Get a guided logical step explaining the next valid deduction instead of random giveaways.',
+              'Daily Mode Streaks & Local Bests: Track your consecutive daily winning streaks independently for each game and compare your fastest personal solve times — 100% offline with no account required.'
+            ]
+          }
+        ],
+        screenshots: ['2nd1.webp', '2nd2.webp', '2nd3.webp', '2nd4.webp'],
+        playStoreUrl: '',
+        status: 'Coming Soon'
+      },
+      {
+        id: 'between-us',
+        title: 'Between Us',
+        icon: '3rd game.webp',
+        fallbackSvg: `
+          <svg viewBox="0 0 100 100" class="w-12 h-12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="39" cy="36" r="12" stroke="#0f172a" stroke-width="4"/>
+            <path d="M23 76C23 62 30 52 39 52C48 52 55 62 55 76" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="61" cy="42" r="10" stroke="#0f172a" stroke-width="4"/>
+            <path d="M47 76C47 64 53 56 61 56C69 56 75 64 75 76" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="71" cy="37" r="4" fill="#facc15"/>
+          </svg>
+        `,
+        shortDesc: 'Upcoming release — details and Play Store link arriving soon.',
+        sections: [
+          {
+            type: 'p',
+            text: 'Between Us is currently in development and will be available on Google Play soon.'
+          }
+        ],
+        screenshots: [],
+        playStoreUrl: '',
+        status: 'Coming Soon'
+      }
+    ];
+
+    const gamesGrid = document.getElementById('gamesGrid');
+    const gameModal = document.getElementById('gameModal');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const modalIconWrap = document.getElementById('modalIconWrap');
+    const modalStatusBadge = document.getElementById('modalStatusBadge');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalGallerySection = document.getElementById('modalGallerySection');
+    const modalGallery = document.getElementById('modalGallery');
+    const modalDescWrap = document.getElementById('modalDescWrap');
+    const modalActionWrap = document.getElementById('modalActionWrap');
+
+    function renderIconHtml(game, sizeClass = 'w-16 h-16') {
+      return `
+        <div class="${sizeClass} rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shadow-sm shrink-0 relative">
+          <img
+            src="${game.icon}"
+            alt="${game.title} icon"
+            class="w-full h-full object-cover"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+          />
+          <div class="hidden w-full h-full items-center justify-center bg-white">
+            ${game.fallbackSvg}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderGames() {
+      gamesGrid.innerHTML = GAMES.map((game, idx) => {
+        const isLive = Boolean(game.playStoreUrl);
+        return `
+          <article
+            data-game-id="${game.id}"
+            style="animation-delay: ${idx * 80}ms"
+            class="animate-card card-hover group cursor-pointer rounded-3xl bg-white border border-slate-200/90 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-indigo-300"
+          >
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-5">
+                <div class="group-hover:scale-105 transition-transform duration-300">
+                  ${renderIconHtml(game, 'w-16 h-16')}
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                  isLive
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-amber-50 text-amber-700'
+                }">
+                  ${isLive ? 'Play Store' : 'Coming Soon'}
+                </span>
+              </div>
+
+              <h2 class="text-xl font-bold tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">
+                ${game.title}
+              </h2>
+              <p class="mt-2 text-sm text-slate-600 leading-relaxed line-clamp-3">
+                ${game.shortDesc}
+              </p>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+              <span class="text-xs font-medium text-slate-500">
+                ${game.screenshots.length > 0 ? `${game.screenshots.length} screenshots` : 'Preview'}
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                isLive
+                  ? 'bg-slate-900 text-white group-hover:bg-indigo-600'
+                  : 'bg-slate-100 text-slate-700 group-hover:bg-slate-200'
+              }">
+                <span>${isLive ? 'View & Download' : 'View Details'}</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"></i>
+              </span>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openGameModal(gameId) {
+      const game = GAMES.find(g => g.id === gameId);
+      if (!game) return;
+      const isLive = Boolean(game.playStoreUrl);
+
+      modalIconWrap.innerHTML = `
+        <img
+          src="${game.icon}"
+          alt="${game.title} icon"
+          class="w-full h-full object-cover"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        />
+        <div class="hidden w-full h-full items-center justify-center bg-white">
+          ${game.fallbackSvg}
+        </div>
+      `;
+
+      modalStatusBadge.className = `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold mb-1 ${
+        isLive
+          ? 'bg-emerald-50 text-emerald-700'
+          : 'bg-amber-50 text-amber-700'
+      }`;
+      modalStatusBadge.textContent = game.status;
+      modalTitle.textContent = game.title;
+
+      // Screenshots
+      if (game.screenshots && game.screenshots.length > 0) {
+        modalGallerySection.classList.remove('hidden');
+        modalGallery.innerHTML = game.screenshots.map((src, i) => `
+          <div class="shrink-0 w-32 sm:w-36 aspect-[9/16] rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+            <img
+              src="${src}"
+              alt="${game.title} gameplay ${i + 1}"
+              class="w-full h-full object-cover"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+            <div class="hidden flex-col items-center justify-center text-center p-3 text-slate-400">
+              <i data-lucide="image" class="w-6 h-6 mb-1.5"></i>
+              <span class="text-[11px] font-medium break-all">${src}</span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        modalGallerySection.classList.add('hidden');
+        modalGallery.innerHTML = '';
+      }
+
+      // Description sections
+      modalDescWrap.innerHTML = game.sections.map(sec => {
+        if (sec.type === 'heading') {
+          return `<h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 pt-2">${sec.text}</h4>`;
+        }
+        if (sec.type === 'list') {
+          return `
+            <ul class="space-y-2">
+              ${sec.items.map(item => `
+                <li class="flex items-start gap-2">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-500 shrink-0 mt-0.5"></i>
+                  <span>${item}</span>
+                </li>
+              `).join('')}
+            </ul>
+          `;
+        }
+        return `<p>${sec.text}</p>`;
+      }).join('');
+
+      // Action button
+      if (isLive) {
+        modalActionWrap.innerHTML = `
+          <a
+            href="${game.playStoreUrl}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all duration-200 active:scale-[0.98]"
+          >
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Download on Google Play</span>
+          </a>
+        `;
+      } else {
+        modalActionWrap.innerHTML = `
+          <div class="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-slate-100 text-slate-600 font-semibold text-sm">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+            <span>Coming Soon to Google Play</span>
+          </div>
+        `;
+      }
+
+      gameModal.classList.remove('hidden');
+      gameModal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeGameModal() {
+      gameModal.classList.add('hidden');
+      gameModal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    // Event Listeners
+    gamesGrid.addEventListener('click', (e) => {
+      const card = e.target.closest('[data-game-id]');
+      if (!card) return;
+      openGameModal(card.dataset.gameId);
+    });
+
+    closeModalBtn.addEventListener('click', closeModalBtn ? closeGameModal : () => {});
+    modalBackdrop.addEventListener('click', closeGameModal);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !gameModal.classList.contains('hidden')) {
+        closeGameModal();
+      }
+    });
+
+    renderGames();
+  </script>
+</body>
+</html>
