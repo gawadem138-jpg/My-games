@@ -43,12 +43,27 @@
       }
     }
 
+    @keyframes lightboxIn {
+      from {
+        opacity: 0;
+        transform: scale(0.94);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
     .animate-card {
       animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
     .animate-modal {
       animation: modalIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .animate-lightbox {
+      animation: lightboxIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
     .card-hover {
@@ -153,9 +168,12 @@
       <div class="p-5 sm:p-6 overflow-y-auto space-y-6 bg-white">
         <!-- Screenshots Gallery -->
         <div id="modalGallerySection" class="hidden">
-          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-            Gameplay Preview
-          </h3>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Gameplay Preview
+            </h3>
+            <span class="text-[11px] text-slate-400">Tap to view full screen</span>
+          </div>
           <div id="modalGallery" class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
             <!-- Screenshots -->
           </div>
@@ -173,6 +191,67 @@
           <!-- Download button or Coming Soon -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Full-Screen Screenshot Lightbox -->
+  <div
+    id="screenshotLightbox"
+    class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/90 backdrop-blur-md p-4 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Screenshot viewer"
+  >
+    <div id="lightboxBackdrop" class="absolute inset-0"></div>
+
+    <!-- Top Bar: Counter + Exit Button -->
+    <div class="absolute top-4 inset-x-4 z-20 flex items-center justify-between max-w-4xl mx-auto">
+      <span id="lightboxCounter" class="px-3 py-1.5 rounded-full bg-white/15 text-white text-xs font-semibold tracking-wide backdrop-blur-sm">
+        1 / 4
+      </span>
+
+      <button
+        id="closeLightboxBtn"
+        type="button"
+        aria-label="Exit screenshot"
+        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm transition-colors active:scale-95"
+      >
+        <i data-lucide="x" class="w-4 h-4"></i>
+        <span>Exit</span>
+      </button>
+    </div>
+
+    <!-- Main Image + Navigation -->
+    <div class="relative z-10 flex items-center justify-center w-full max-w-4xl gap-2 sm:gap-5">
+      <!-- Previous Button -->
+      <button
+        id="prevScreenshotBtn"
+        type="button"
+        aria-label="Previous screenshot"
+        class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center backdrop-blur-sm transition-all active:scale-90 shrink-0"
+      >
+        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+      </button>
+
+      <!-- Active Screenshot -->
+      <div id="lightboxImageWrap" class="animate-lightbox flex items-center justify-center max-h-[80vh] max-w-[74vw] sm:max-w-md rounded-2xl overflow-hidden bg-slate-900 border border-white/15 shadow-2xl">
+        <img
+          id="lightboxImg"
+          src=""
+          alt="Gameplay screenshot"
+          class="max-h-[80vh] w-auto object-contain transition-opacity duration-200"
+        />
+      </div>
+
+      <!-- Move Forward / Next Button -->
+      <button
+        id="nextScreenshotBtn"
+        type="button"
+        aria-label="Next screenshot"
+        class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center backdrop-blur-sm transition-all active:scale-90 shrink-0"
+      >
+        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+      </button>
     </div>
   </div>
 
@@ -301,6 +380,21 @@
     const modalDescWrap = document.getElementById('modalDescWrap');
     const modalActionWrap = document.getElementById('modalActionWrap');
 
+    // Lightbox elements
+    const screenshotLightbox = document.getElementById('screenshotLightbox');
+    const lightboxBackdrop = document.getElementById('lightboxBackdrop');
+    const closeLightboxBtn = document.getElementById('closeLightboxBtn');
+    const prevScreenshotBtn = document.getElementById('prevScreenshotBtn');
+    const nextScreenshotBtn = document.getElementById('nextScreenshotBtn');
+    const lightboxCounter = document.getElementById('lightboxCounter');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxImageWrap = document.getElementById('lightboxImageWrap');
+
+    let activeScreenshots = [];
+    let activeScreenshotIndex = 0;
+    let activeGameTitle = '';
+    let touchStartX = 0;
+
     function renderIconHtml(game, sizeClass = 'w-16 h-16') {
       return `
         <div class="${sizeClass} rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shadow-sm shrink-0 relative">
@@ -372,6 +466,8 @@
       const game = GAMES.find(g => g.id === gameId);
       if (!game) return;
       const isLive = Boolean(game.playStoreUrl);
+      activeScreenshots = game.screenshots || [];
+      activeGameTitle = game.title;
 
       modalIconWrap.innerHTML = `
         <img
@@ -394,21 +490,29 @@
       modalTitle.textContent = game.title;
 
       // Screenshots
-      if (game.screenshots && game.screenshots.length > 0) {
+      if (activeScreenshots.length > 0) {
         modalGallerySection.classList.remove('hidden');
-        modalGallery.innerHTML = game.screenshots.map((src, i) => `
-          <div class="shrink-0 w-32 sm:w-36 aspect-[9/16] rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+        modalGallery.innerHTML = activeScreenshots.map((src, i) => `
+          <button
+            type="button"
+            data-screenshot-index="${i}"
+            aria-label="View ${game.title} screenshot ${i + 1}"
+            class="group/shot relative shrink-0 w-32 sm:w-36 aspect-[9/16] rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:border-indigo-400 transition-all duration-200 active:scale-95"
+          >
             <img
               src="${src}"
               alt="${game.title} gameplay ${i + 1}"
-              class="w-full h-full object-cover"
+              class="w-full h-full object-cover group-hover/shot:scale-105 transition-transform duration-300"
               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
             />
             <div class="hidden flex-col items-center justify-center text-center p-3 text-slate-400">
               <i data-lucide="image" class="w-6 h-6 mb-1.5"></i>
               <span class="text-[11px] font-medium break-all">${src}</span>
             </div>
-          </div>
+            <span class="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-slate-900/60 text-white flex items-center justify-center opacity-0 group-hover/shot:opacity-100 transition-opacity">
+              <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+            </span>
+          </button>
         `).join('');
       } else {
         modalGallerySection.classList.add('hidden');
@@ -469,6 +573,45 @@
       document.body.style.overflow = '';
     }
 
+    function updateLightbox() {
+      if (!activeScreenshots.length) return;
+      const src = activeScreenshots[activeScreenshotIndex];
+      lightboxImg.style.opacity = '0.35';
+      lightboxImg.src = src;
+      lightboxImg.alt = `${activeGameTitle} gameplay ${activeScreenshotIndex + 1}`;
+      lightboxCounter.textContent = `${activeScreenshotIndex + 1} / ${activeScreenshots.length}`;
+      lightboxImg.onload = () => {
+        lightboxImg.style.opacity = '1';
+      };
+      lightboxImg.onerror = () => {
+        lightboxImg.style.opacity = '1';
+      };
+
+      const hasMultiple = activeScreenshots.length > 1;
+      prevScreenshotBtn.classList.toggle('hidden', !hasMultiple);
+      nextScreenshotBtn.classList.toggle('hidden', !hasMultiple);
+    }
+
+    function openLightbox(index) {
+      if (!activeScreenshots.length) return;
+      activeScreenshotIndex = index;
+      updateLightbox();
+      screenshotLightbox.classList.remove('hidden');
+      screenshotLightbox.classList.add('flex');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeLightbox() {
+      screenshotLightbox.classList.add('hidden');
+      screenshotLightbox.classList.remove('flex');
+    }
+
+    function stepScreenshot(delta) {
+      if (!activeScreenshots.length) return;
+      activeScreenshotIndex = (activeScreenshotIndex + delta + activeScreenshots.length) % activeScreenshots.length;
+      updateLightbox();
+    }
+
     // Event Listeners
     gamesGrid.addEventListener('click', (e) => {
       const card = e.target.closest('[data-game-id]');
@@ -476,10 +619,39 @@
       openGameModal(card.dataset.gameId);
     });
 
-    closeModalBtn.addEventListener('click', closeModalBtn ? closeGameModal : () => {});
+    modalGallery.addEventListener('click', (e) => {
+      const shotBtn = e.target.closest('[data-screenshot-index]');
+      if (!shotBtn) return;
+      openLightbox(Number(shotBtn.dataset.screenshotIndex));
+    });
+
+    closeModalBtn.addEventListener('click', closeGameModal);
     modalBackdrop.addEventListener('click', closeGameModal);
 
+    closeLightboxBtn.addEventListener('click', closeLightbox);
+    lightboxBackdrop.addEventListener('click', closeLightbox);
+    prevScreenshotBtn.addEventListener('click', () => stepScreenshot(-1));
+    nextScreenshotBtn.addEventListener('click', () => stepScreenshot(1));
+
+    // Touch swipe in lightbox
+    lightboxImageWrap.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    lightboxImageWrap.addEventListener('touchend', (e) => {
+      const diff = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diff) > 40) {
+        stepScreenshot(diff < 0 ? 1 : -1);
+      }
+    }, { passive: true });
+
     document.addEventListener('keydown', (e) => {
+      if (!screenshotLightbox.classList.contains('hidden')) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') stepScreenshot(1);
+        if (e.key === 'ArrowLeft') stepScreenshot(-1);
+        return;
+      }
       if (e.key === 'Escape' && !gameModal.classList.contains('hidden')) {
         closeGameModal();
       }
